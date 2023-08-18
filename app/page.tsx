@@ -1,113 +1,240 @@
-import Image from 'next/image'
+'use client';
+import React, { useState } from 'react';
+import { Page, Text, View, Document, StyleSheet, Image, PDFViewer, Font, PDFDownloadLink } from '@react-pdf/renderer';
 
-export default function Home() {
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
+import PDFTable from './components/PDFTable';
+import { columns, mockData } from './components/AnnualisedPerformanceTable';
+import * as calendarYearData from './components/CalendarYearPerformanceTable';
+import * as holdingsData from './components/HoldingsTable';
+import * as sectorGeographyData from './components/SectorGeographyTable';
+import Chart from './components/Charts';
+import FundInfo from './components/FundInfo';
+import tableStyles from './components/tableStyles';
 
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 before:lg:h-[360px] z-[-1]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
+Font.register(
+  {
+    family: 'Inter',
+    fonts: [
+      {
+        fontWeight: 400,
+        src: 'https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfMZg.ttf',
+      },
+      {
+        src: 'https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuI6fMZg.ttf',
+        fontWeight: 500,
+      },
+      {
+        src: 'https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuGKYMZg.ttf',
+        fontWeight: 600,
+      },
+      {
+        src: 'https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuFuYMZg.ttf',
+        fontWeight: 700,
+      }
+    ],
+  }
+);
 
-      <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
+// Create styles
+const styles = StyleSheet.create({
+  page: {
+    backgroundColor: '#FFFFFF',
+    padding: '40px 32px',
+    fontFamily: 'Inter',
+  },
+  topSection: {
+    flexDirection: 'column',
+    marginBottom: '16px',
+  },
+  titleSection: {
+    flexDirection: 'column',
+  },
+  amiLogo: {
+    height: 18,
+    width: 105,
+    marginBottom: 8,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: 600,
+    lineHeight: 1.6,
+    color: '#181920',
+  },
+  titleInfo: {
+    fontSize: 7,
+    fontWeight: 400,
+    lineHeight: 1.7,
+    color: '#6F707A',
+  },
+  summaryInfoSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  sectionTitle: {
+    fontSize: 9,
+    fontWeight: 400,
+    lineHeight: 1.3,
+    textTransform: 'uppercase',
+    width: '100%',
+    paddingTop: 4,
+    borderTop: '1px solid #313341',
+    marginBottom: '8px',
+    color: '#1D1F27',
+  },
+  sectionContainer: {
+    flexDirection: 'column',
+    width: '100%',
+    marginBottom: 16,
+  },
+  sectionBodyText: {
+    fontSize: 9,
+    fontWeight: 400,
+    lineHeight: 1.55,
+    color: '#313341'
+  },
+});
 
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Explore the Next.js 13 playground.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
-  )
+const getAnnualisedTableRowStyle = <T, >(data: T, idx: number) => {
+  if (idx > 0 && (idx + 2) % 2 === 0) {
+    return {
+      backgroundColor: '#EAEBEC',
+    };
+  }
+  return {};
 }
+
+// Create Document Component
+const MyDocument = ({ chartLink }: { chartLink?: string }) => {
+  return (
+    <Document>
+      <Page size="A4" style={styles.page}>
+        <View style={styles.topSection}>
+          <Image style={styles.amiLogo} src="/logo.png" />
+          <View style={styles.titleSection}>
+            <Text style={styles.title}>
+              ES AllianceBernst Europe Ex UK F EUR Inc
+            </Text>
+            <Text style={styles.titleInfo}>
+              Equity Fund Report as of 12 Sep 2021 to 11 Oct 2021
+            </Text>
+          </View>
+        </View>
+        <View style={styles.summaryInfoSection}>
+          <View style={[styles.sectionContainer, { marginRight: '24px' }]}>
+            <Text style={[styles.sectionTitle]}>
+              SUMMARY
+            </Text>
+            <Text style={styles.sectionBodyText}>
+              ES AllianceBernstein Europe ex UK Equity is a fund that focuses on investing in European companies,
+              {' '} excluding the UK. The fund&lsquo;s investment philosophy is based on a combination of fundamental
+              {' '} research and quantitative analysis. Its approach to portfolio management emphasizes diversification, aiming to
+              {' '} strike a balance between growth and value stocks. The fund&lsquo;s criteria for selecting investments include
+              {' '} identifying companies with strong business models, competitive advantages, and attractive valuations.
+              {' '} The investment team also considers macroeconomic factors and industry trends to ensure a well-rounded portfolio.
+              {' '} The fund&lsquo;s primary objective is capital appreciation, achieved through a disciplined and research-driven investment process.
+            </Text>
+          </View>
+          <View style={[styles.sectionContainer, { width: '70%' }]}>
+            <Text style={styles.sectionTitle}>
+              FUND INFORMATION
+            </Text>
+            <FundInfo />
+          </View>
+        </View>
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>
+            ANNUALISED PERFORMANCE
+          </Text>
+          <PDFTable
+            rowStyle={{ padding: '4px 5px' }}
+            data={mockData}
+            columns={columns}
+            getRowStyle={getAnnualisedTableRowStyle}
+          />
+        </View>
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>
+            CALENDAR YEAR PERFORMANCE
+          </Text>
+          <PDFTable
+            rowStyle={{ padding: '4px 5px' }}
+            data={calendarYearData.mockData}
+            columns={calendarYearData.columns}
+            getRowStyle={getAnnualisedTableRowStyle}
+          />
+        </View>
+      </Page>
+      <Page size="A4" style={styles.page}>
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>
+            HOLDINGS
+          </Text>
+          <PDFTable
+            rowStyle={tableStyles.borderedTable}
+            data={holdingsData.mockData}
+            columns={holdingsData.columns}
+            rootStyle={tableStyles.bordered}
+            getRowStyle={() => ({ paddingVertical: '4px' })}
+          />
+        </View>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+          <View style={[styles.sectionContainer, { width: '48%' }]}>
+            <Text style={styles.sectionTitle}>
+              SECTOR
+            </Text>
+            <PDFTable
+              rowStyle={tableStyles.borderedTable}
+              data={sectorGeographyData.sectorData}
+              columns={sectorGeographyData.sectorColumns}
+              rootStyle={tableStyles.bordered}
+              getRowStyle={() => ({ paddingVertical: '4px' })}
+            />
+          </View>
+          <View style={[styles.sectionContainer, { width: '48%' }]}>
+            <Text style={styles.sectionTitle}>
+              GEOGRAPHY
+            </Text>
+            <PDFTable
+              rowStyle={tableStyles.borderedTable}
+              data={sectorGeographyData.geographyData}
+              columns={sectorGeographyData.geographyColumns}
+              rootStyle={tableStyles.bordered}
+              getRowStyle={() => ({ paddingVertical: '4px' })}
+            />
+          </View>
+        </View>
+      </Page>
+      <Page style={styles.page} size="A4">
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>
+            Chart Sample
+          </Text>
+          <Image style={{ height: 300, width: 300 }} src={chartLink} />
+        </View>
+      </Page>
+    </Document>
+  );
+};
+
+const App = () => {
+  const [chartLink, setChartLink] = useState('');
+  const handleImageSet = (link: string) => {
+    setChartLink(link);
+  };
+  return (
+    <div className="h-[100vh] w-full flex-col flex items-center justify-center p-20">
+      <PDFViewer className="h-full w-full" height={700}>
+        <MyDocument chartLink={chartLink} />
+      </PDFViewer>
+      <div className="h-[300px] w-[300px] absolute -top-[300px]">
+        <Chart onImageSet={handleImageSet} />
+      </div>
+      <PDFDownloadLink document={<MyDocument chartLink={chartLink} />} fileName='download-test.pdf'>
+        {() => 'Download PDF'}
+      </PDFDownloadLink>
+    </div>
+  );
+};
+
+export default App;
